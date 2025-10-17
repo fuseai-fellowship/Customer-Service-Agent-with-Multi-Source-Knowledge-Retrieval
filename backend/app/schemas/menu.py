@@ -55,6 +55,7 @@ class ItemUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     is_available: bool | None = None
+    emb: list[float] | None = None 
 
 class ItemOut(ItemBase):
     id: int

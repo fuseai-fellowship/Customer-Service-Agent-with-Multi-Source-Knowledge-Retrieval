@@ -1,29 +1,31 @@
-// src/pages/Menu.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Tab, Tabs } from "@mui/material";
 import CategoriesTable from "../components/CategoriesTable";
 import ItemsTable from "../components/ItemsTable";
 import CategoryFormModal from "../components/CategoryFormModal";
 import ItemFormModal from "../components/ItemFormModal";
-import ManageVariationsModal from "../components/ManageVariationsModal"; // Import the new modal
+import ManageVariationsModal from "../components/ManageVariationsModal";
+import DescriptionViewModal from "../components/DescriptionViewModal";
 import { getCategories, createCategory, updateCategory, deleteCategory, getItems, createItem, updateItem, deleteItem } from "../lib/api";
 
 export default function MenuPage() {
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Categories state
+  // State for all modals
   const [categories, setCategories] = useState([]);
   const [isCategoryModalOpen, setCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // Items state
   const [items, setItems] = useState([]);
   const [isItemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  
+  // This state now controls the variations modal and the auto-create flag
+  const [variationsModalState, setVariationsModalState] = useState({ open: false, item: null, autoCreate: false });
 
-  // Variations state
-  const [managingVariationsForItem, setManagingVariationsForItem] = useState(null);
+  const [isDescriptionModalOpen, setDescriptionModalOpen] = useState(false);
+  const [viewingDescription, setViewingDescription] = useState({ title: "", content: "" });
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -42,54 +44,43 @@ export default function MenuPage() {
     loadData();
   }, [loadData]);
 
-  // --- Category CRUD Handling ---
+  // --- Handlers ---
   const handleCategoryCrud = (action, data) => {
-    if (action === "create") {
-      setEditingCategory(null);
-      setCategoryModalOpen(true);
-    } else if (action === "edit") {
-      setEditingCategory(data);
-      setCategoryModalOpen(true);
-    } else if (action === "delete") {
-      if (window.confirm(`Delete "${data.name}"?`)) {
-        deleteCategory(data.id).then(loadData);
-      }
-    }
+    if (action === "create") setEditingCategory(null);
+    else setEditingCategory(data);
+    setCategoryModalOpen(true);
+  };
+  
+  const handleItemCrud = (action, data) => {
+    if (action === "create") setEditingItem(null);
+    else setEditingItem(data);
+    setItemModalOpen(true);
   };
 
   const handleCategorySubmit = (formData) => {
-    const promise = editingCategory
-      ? updateCategory(editingCategory.id, formData)
-      : createCategory(formData);
+    const promise = editingCategory ? updateCategory(editingCategory.id, formData) : createCategory(formData);
     promise.then(() => {
       setCategoryModalOpen(false);
       loadData();
     });
   };
 
-  // --- Item CRUD Handling ---
-  const handleItemCrud = (action, data) => {
-    if (action === "create") {
-      setEditingItem(null);
-      setItemModalOpen(true);
-    } else if (action === "edit") {
-      setEditingItem(data);
-      setItemModalOpen(true);
-    } else if (action === "delete") {
-      if (window.confirm(`Delete "${data.name}"?`)) {
-        deleteItem(data.id).then(loadData);
-      }
-    }
-  };
-
-  const handleItemSubmit = (formData) => {
-    const promise = editingItem
-      ? updateItem(editingItem.id, formData)
-      : createItem(formData);
-    promise.then(() => {
+  const handleItemSubmit = async (formData) => {
+    if (editingItem) {
+      await updateItem(editingItem.id, formData);
       setItemModalOpen(false);
-      loadData();
-    });
+    } else {
+      const newItem = await createItem(formData);
+      setItemModalOpen(false);
+      // **KEY CHANGE**: Open variations modal with auto-create flag set to true
+      setVariationsModalState({ open: true, item: newItem, autoCreate: true });
+    }
+    loadData();
+  };
+  
+  const handleViewDescription = (title, content) => {
+    setViewingDescription({ title: `Description for ${title}`, content });
+    setDescriptionModalOpen(true);
   };
 
   return (
@@ -107,7 +98,8 @@ export default function MenuPage() {
           rows={items}
           categories={categories}
           onCrud={handleItemCrud}
-          onManageVariations={setManagingVariationsForItem} // Connect the handler
+          onManageVariations={(item) => setVariationsModalState({ open: true, item: item, autoCreate: false })}
+          onViewDescription={handleViewDescription}
           loading={loading}
         />
       )}
@@ -127,12 +119,22 @@ export default function MenuPage() {
         initialData={editingItem}
         categories={categories}
       />
-      {managingVariationsForItem && (
+      {variationsModalState.open && (
         <ManageVariationsModal
-          item={managingVariationsForItem}
-          onClose={() => setManagingVariationsForItem(null)}
+          item={variationsModalState.item}
+          startWithCreate={variationsModalState.autoCreate}
+          onClose={() => {
+            setVariationsModalState({ open: false, item: null, autoCreate: false });
+            loadData();
+          }}
         />
       )}
+      <DescriptionViewModal
+        open={isDescriptionModalOpen}
+        onClose={() => setDescriptionModalOpen(false)}
+        title={viewingDescription.title}
+        description={viewingDescription.content}
+      />
     </>
   );
 }

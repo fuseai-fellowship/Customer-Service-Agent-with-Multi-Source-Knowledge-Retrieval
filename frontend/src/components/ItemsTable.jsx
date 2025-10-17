@@ -1,17 +1,35 @@
 // src/components/ItemsTable.jsx
 import React from "react";
 import { MaterialReactTable, useMaterialReactTable } from "material-react-table";
-import { Box, Button, IconButton, Tooltip } from "@mui/material";
+import { Box, Button, IconButton, Tooltip, Link as MuiLink } from "@mui/material";
 import { Edit, Delete, Add, Visibility } from "@mui/icons-material";
 
-export default function ItemsTable({ rows, categories = [], onCrud, onManageVariations, loading }) {
+export default function ItemsTable({ rows, categories = [], onCrud, onManageVariations, onViewDescription, loading }) {
   const categoryMap = React.useMemo(() => new Map(categories.map(c => [c.id, c.name])), [categories]);
 
   const COLUMNS = [
-    { accessorKey: "id", header: "ID", size: 60 },
-    { accessorKey: "name", header: "Name" },
-    { accessorFn: (row) => categoryMap.get(row.category_id) || "N/A", header: "Category" },
-    { accessorKey: "subcategory", header: "Subcategory" },
+    { accessorKey: "id", header: "ID", size: 50 },
+    { accessorKey: "name", header: "Name", size: 200 },
+    {
+      accessorKey: "description",
+      header: "Description",
+      size: 120,
+      Cell: ({ row }) => {
+        const { description, name } = row.original;
+        if (!description) return "—"; // Show dash if no description
+        return (
+          <MuiLink
+            component="button"
+            variant="body2"
+            onClick={() => onViewDescription(name, description)}
+          >
+            View Details
+          </MuiLink>
+        );
+      },
+    },
+    { accessorFn: (row) => categoryMap.get(row.category_id) || "N/A", header: "Category", size: 150 },
+    { accessorKey: "subcategory", header: "Subcategory", size: 150 },
     { accessorKey: "is_available", header: "Available", Cell: ({ cell }) => (cell.getValue() ? "Yes" : "No"), size: 100 },
   ];
 
