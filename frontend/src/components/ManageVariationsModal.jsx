@@ -13,7 +13,7 @@ const COLUMNS = [
   { accessorKey: "is_available", header: "Available", Cell: ({ cell }) => (cell.getValue() ? "Yes" : "No"), size: 100 },
 ];
 
-export default function ManageVariationsModal({ item, onClose }) {
+export default function ManageVariationsModal({ item, onClose, startWithCreate = false }) {
   const [variations, setVariations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isFormOpen, setFormOpen] = useState(false);
@@ -35,6 +35,14 @@ export default function ManageVariationsModal({ item, onClose }) {
   useEffect(() => {
     loadVariations();
   }, [loadVariations]);
+
+  // **KEY CHANGE**: This effect runs when the modal opens.
+  // If the 'startWithCreate' flag is true, it immediately opens the 'New Variation' form.
+  useEffect(() => {
+    if (startWithCreate) {
+      handleCrud('create');
+    }
+  }, [startWithCreate]);
 
   const handleCrud = (action, data) => {
     if (action === "create") {
