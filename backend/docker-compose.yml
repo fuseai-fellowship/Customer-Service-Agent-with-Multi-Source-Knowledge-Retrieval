@@ -1,0 +1,12 @@
+# backend/docker-compose.yml
+services:
+  api:
+    build:
+      context: . # Assumes this file is inside the 'backend' directory
+      dockerfile: Dockerfile
+    env_file:
+      - .env # Tells Docker Compose to load variables from the .env file
+    ports:
+      - "8000:8080"
+
+# Removed db service and volumes as we are connecting to Supabase externally
