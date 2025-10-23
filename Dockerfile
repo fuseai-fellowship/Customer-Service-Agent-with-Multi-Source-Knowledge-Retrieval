@@ -1,3 +1,4 @@
+# Dockerfile (project root) - UPDATED
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -5,8 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8080 \
     PIP_NO_CACHE_DIR=1
 
+# Install build-essential AND python3-dev, libffi-dev for cryptography build
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl && \
+    build-essential curl gcc python3-dev libffi-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
