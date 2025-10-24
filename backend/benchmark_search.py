@@ -116,17 +116,18 @@ def test_combined(db: Session, search_term: str) -> int:
     count = db.query(Item).filter(or_(fts_match, fuzzy_match)).count()
     return count
 
+# --- MOVED THE DICTIONARY HERE ---
+# List of functions to test (must be defined AFTER the functions)
+search_strategies = {
+    "Normal ILIKE": test_normal_like,
+    "FTS Only": test_fts_only,
+    "Fuzzy Only": test_fuzzy_only,
+    "Combined (FTS+Fuzzy)": test_combined,
+}
+
 def run_benchmark():
     """Main function to run all tests and print results"""
     
-    # List of functions to test
-    search_strategies = {
-        "Normal ILIKE": test_normal_like,
-        "FTS Only": test_fts_only,
-        "Fuzzy Only": test_fuzzy_only,
-        "Combined (FTS+Fuzzy)": test_combined,
-    }
-
     db = SessionLocal()
     results = {} # To store (avg_time, result_count)
 
