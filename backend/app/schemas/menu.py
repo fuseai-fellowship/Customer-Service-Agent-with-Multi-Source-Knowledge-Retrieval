@@ -1,9 +1,9 @@
 # backend/app/schemas/menu.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from datetime import datetime
 from decimal import Decimal
 
-# --- Category Schemas ---
+# Category Schemas
 class CategoryBase(BaseModel):
     name: str
 
@@ -18,7 +18,7 @@ class CategoryOut(CategoryBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- PriceVariation Schemas ---
+# priceVariation Schemas --
 class PriceVariationBase(BaseModel):
     item_id: int
     label: str
@@ -38,7 +38,7 @@ class PriceVariationOut(PriceVariationBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- Item Schemas ---
+# Item Schemas 
 class ItemBase(BaseModel):
     category_id: int
     subcategory: str | None = None
@@ -57,13 +57,18 @@ class ItemUpdate(BaseModel):
     is_available: bool | None = None
     emb: list[float] | None = None 
 
+# --- THIS IS THE MODIFIED ItemOut CLASS ---
 class ItemOut(ItemBase):
     id: int
     variations: list[PriceVariationOut] = []
+    
+    # NO @computed_field. Just a regular field.
+    category_name: str | None = None 
+
     model_config = ConfigDict(from_attributes=True)
 
 
-# --- MenuSpecial Schemas ---
+#MenuSpecial Schema
 class MenuSpecialBase(BaseModel):
     item_id: int
     variation_id: int

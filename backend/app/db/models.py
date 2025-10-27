@@ -64,6 +64,7 @@ class Item(Base):
     # --- Search-related columns ---
     name_norm: Mapped[str | None] = mapped_column(Text, nullable=True)
     description_norm: Mapped[str | None] = mapped_column(Text, nullable=True)
+    category_name_norm: Mapped[str | None] = mapped_column(Text, nullable=True)
     tsv: Mapped[TSVECTOR | None] = mapped_column(TSVECTOR, nullable=True)
     
     # CORRECTED THE VECTOR SIZE FROM 1536 to 384
@@ -99,3 +100,12 @@ class MenuSpecial(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     item: Mapped[Item] = relationship("Item", back_populates="specials")
     variation: Mapped[PriceVariation] = relationship("PriceVariation", back_populates="specials")
+    
+class KnowledgeBase(Base):
+    __tablename__ = "knowledge_base"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # This matches the 'emb' column in your 'Item' model
+    emb: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
