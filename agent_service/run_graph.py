@@ -11,27 +11,51 @@ class ReviewDecision(BaseModel):
     answer: str = ""
     todo: str = ""
 
-# user query
-user_input = "hey i want to visit you guys if you serve spagetti also tell me where are you located"
-human_msg = HumanMessage(content=user_input)
+def interactive_loop():
+    print("Chat loop (type 'exit' to quit)\n")
 
+    # Persisted compact chat history (human ↔ AI exchanges)
+    chat_history = ""
 
-# ensure state exists
-state = {
-    "messages": [],
-    "summary": "",
-    "review_decision": ReviewDecision(decision="needs_more", rationale="", answer="", todo="")
-}
+    while True:
+        user_input = input("You: ").strip()
+        if user_input.lower() in {"exit", "quit"}:
+            print("Goodbye.")
+            break
+        if not user_input:
+            continue
 
-state["messages"].append(human_msg)
-state["summary"] += f"\nHuman: {human_msg.content}"
-# invoke the graph
-result = graph.invoke(state)  # state is mutated in-place
+        # fresh state for this run
+        state = {
+            "messages": [],
+            "summary": chat_history,  # inject prior conversation
+            "tool_output": "",
+            "review_decision": ReviewDecision(decision="needs_more")  # initial placeholder
+        }
 
-# now extract the final user-facing answer
-final_answer = result["review_decision"].answer
+        # add current user message
+        human_msg = HumanMessage(content=user_input)
+        state["messages"].append(human_msg)
+        state["summary"] += f"\nHuman: {user_input}"
 
-# and also get the summary for chat history
-chat_summary = result["summary"]
+        # invoke graph
+        result = graph.invoke(state)
 
-print(final_answer)
+        # Extract final answer from result's review_decision
+        review = result.get("review_decision")
+        final_answer = review.answer if review else "(no answer)"
+
+        # Print assistant's reply
+        print("\nAssistant:", final_answer)
+
+        # Update chat_history with human + AI turn only
+        chat_history += f"\nHuman: {user_input}\nAI: {final_answer}"
+        # Optional: trim history to last N chars/lines
+        MAX_CHARS = 2000
+        if len(chat_history) > MAX_CHARS:
+            chat_history = chat_history[-MAX_CHARS:]
+
+        print()  # blank line for readability
+
+if __name__ == "__main__":
+    interactive_loop()
