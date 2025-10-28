@@ -22,24 +22,26 @@ def reviewer_node(state: State):
     # include summary as a system message (compressed menu_tool output)
     if "summary" in state and state["summary"]:
         msgs.append(SystemMessage(content=f"Summary: {state['summary']}"))
+    
+    if "tool_output" in state and state["tool_output"]:
+        msgs.append(SystemMessage(content=f"Tool Output: {state['tool_output']}"))
 
     # Call structured reviewer
     review: ReviewDecision = structured_reviewer.invoke(msgs)
     
     updates = {}
 
-    # Update messages with final answer or reviewer note
-    if review.decision == "ok" and review.answer:
-        updates["messages"] = [AIMessage(content=review.answer)]
-        # Append reviewer info to summary
-        state.setdefault("summary", "")
-        state["summary"] += f"\nReviewer decision: OK\nRationale: {review.rationale}\nAnswer: {review.answer}"
-    else:
-        updates["messages"] = [SystemMessage(content=f"Reviewer: needs more info → {review.todo}")]
-        # Append reviewer info to summary
-        state.setdefault("summary", "")
-        state["summary"] += f"\nReviewer decision: Needs more info\nRationale: {review.rationale}\nTodo: {review.todo}"
+    # Ensure summary exists
+    state.setdefault("summary", "")
 
-    # Always update review_decision in state
-    updates["review_decision"] = review.decision
-    return updates
+    # Append AI answer to summary if decision is "ok"
+    if review.decision == "ok" and review.answer:
+        state["summary"] += f"\nAI: {review.answer}"
+
+    # Store the full ReviewDecision object in state
+    state["review_decision"] = review
+
+    # Keep messages as before
+    updates["messages"] = [AIMessage(content=review.answer)] if review.decision == "ok" else [SystemMessage(content=f"Reviewer: needs more info → {review.todo}")]
+
+    return state

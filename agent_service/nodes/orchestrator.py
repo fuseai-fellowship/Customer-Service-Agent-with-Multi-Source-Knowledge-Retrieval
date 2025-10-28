@@ -1,10 +1,10 @@
 from agent_service.prompts import ORCHESTRATOR_PROMPT
 from agent_service.state import State
 from agent_service.llm import llm
+from langchain.schema import SystemMessage, AIMessage
 from agent_service.tools import menu_tool, kb_tool
 tools = [menu_tool, kb_tool]
 
-from langchain.schema import SystemMessage, AIMessage
 
 def orchestrator(state: State):
     """
@@ -15,7 +15,17 @@ def orchestrator(state: State):
     state.setdefault("summary", "")
 
     # prepend system prompt to conversation
-    messages = [SystemMessage(content=ORCHESTRATOR_PROMPT)] + state["messages"]
+    messages = [SystemMessage(content=ORCHESTRATOR_PROMPT)]
+
+    # Include summary if present
+    if state.get("summary"):
+        messages.append(SystemMessage(content=f"Summary:\n{state['summary']}"))
+
+    # Include review_decision if present
+    if state.get("review_decision"):
+    # Use model_dump() for Pydantic v2
+        review_dict = state["review_decision"].model_dump() if hasattr(state["review_decision"], "model_dump") else state["review_decision"]
+        messages.append(SystemMessage(content=f"Review Decision:\n{review_dict}"))
 
     # call LLM with tools
     llm_with_tools = llm.bind_tools(tools)
@@ -29,4 +39,5 @@ def orchestrator(state: State):
     state["messages"].append(resp)
 
     # return minimal dict; state is already updated
-    return {"messages": [resp]}
+    return state
+
