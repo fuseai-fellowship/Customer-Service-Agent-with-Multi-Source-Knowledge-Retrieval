@@ -54,11 +54,7 @@ Respond with a JSON object with the following keys:
       "inputs": { ... }  # filled input parameters
     }
   ],
-  "answer": "string",         # final assistant message
-  "updated_memory": {         # updated state to store
-    "tasks": [...],
-    "entities": {...}
-  }
+  "answer": "string"       # final assistant message
 }
 
 Rules:
