@@ -1,11 +1,16 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
-from nodes import orchestrator, tools_node, reviewer_node, tool_summarizer_node
-from state import State
+from agent_service.nodes import orchestrator, tools_node, reviewer_node, tool_summarizer_node
+from agent_service.state import State
+from agent_service.nodes.reviewer import ReviewDecision
 
 
 def route_after_reviewer(state: State):
-    return "orchestrator_node" if state.get("review_decision") == "needs_more" else "__end__"
+    review: ReviewDecision = state.get("review_decision")
+    if review and review.decision == "needs_more":
+        return "orchestrator_node"
+    return "__end__"
+
 
 def build_graph():
     g = StateGraph(State)

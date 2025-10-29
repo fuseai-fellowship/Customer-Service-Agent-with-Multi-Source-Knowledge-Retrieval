@@ -1,8 +1,8 @@
-from prompts import ORCHESTRATOR_PROMPT
-from state import State
-from llm import llm
+from agent_service.prompts import ORCHESTRATOR_PROMPT
+from agent_service.state import State
+from agent_service.llm import llm
 from langchain.schema import SystemMessage, AIMessage
-from tools import menu_tool, kb_tool
+from agent_service.tools import menu_tool, kb_tool
 tools = [menu_tool, kb_tool]
 
 
