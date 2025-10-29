@@ -30,3 +30,6 @@ venv/
 # ========================
 .vscode/
 .idea/
+/venv
+/venv-agent
+.env
