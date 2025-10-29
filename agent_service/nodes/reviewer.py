@@ -35,8 +35,10 @@ def reviewer_node(state: State):
     state.setdefault("summary", "")
 
     # Append AI answer to summary if decision is "ok"
-    if review.decision == "ok" and review.answer:
-        state["summary"] += f"\nAI: {review.answer}"
+    # if review.decision == "ok" and review.answer:
+    #     state["summary"] += f"\nAI: {review.answer}"
+    state["summary"] += f"\nReviewDecision:\n- Decision: {review.decision}\n- Rationale: {review.rationale}\n- Answer: {review.answer}\n- Todo: {review.todo}"
+
 
     # Store the full ReviewDecision object in state
     state["review_decision"] = review
