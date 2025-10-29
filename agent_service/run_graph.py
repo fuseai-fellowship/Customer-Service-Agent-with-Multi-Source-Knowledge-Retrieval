@@ -1,4 +1,4 @@
-from agent_service.graph import build_graph
+from graph import build_graph
 from langchain.schema import HumanMessage
 from pydantic import BaseModel
 from typing import Literal

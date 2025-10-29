@@ -1,11 +1,12 @@
 from typing import Literal
 from pydantic import BaseModel
-from agent_service.state import State
-from agent_service.llm import llm
-from agent_service.prompts import REVIEWER_PROMPT
+from ..state import State
+from ..llm import llm
+from prompts import REVIEWER_PROMPT
 from langchain.schema import AIMessage
 
 class ReviewDecision(BaseModel):
+    """Structured output for the reviewer node."""
     decision: Literal["ok", "needs_more"]
     rationale: str = ""
     answer: str = ""
