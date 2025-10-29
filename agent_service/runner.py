@@ -11,11 +11,11 @@ class ReviewDecision(BaseModel):
     answer: str = ""
     todo: str = ""
 
-def code_runner(user_input:str):
+def code_runner(user_input:str, chat_history:str):
         # fresh state for this run
     state = {
         "messages": [],
-        "summary": "",  # inject prior conversation
+        "summary": chat_history,  # inject prior conversation
         "tool_output": "",
         "review_decision": ReviewDecision(decision="needs_more")  # initial placeholder
     }
@@ -31,4 +31,6 @@ def code_runner(user_input:str):
     # Extract final answer from result's review_decision
     review = result.get("review_decision")
     final_answer = review.answer if review else "(no answer)"
-    return final_answer
+
+    chat_summary += f"\nHuman: {user_input}\nAI: {final_answer}"
+    return final_answer, chat_summary
