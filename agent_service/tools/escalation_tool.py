@@ -1,13 +1,14 @@
 from langchain_core.tools import tool
 @tool
-def escalation_tool(query:str) -> str:
+def escalation_tool(user_request:str) -> str:
     """
-    Retrieves restaurant knowledge base information based on a user query.
+    Triggers notification to the admin and responds to inform that the message has been forwarded to admin.
 
     Args:
-        query (str): Question or topic related to restaurant policies, FAQs, or general info.
+        user_request (str): User request that needs admin support.
 
     Returns:
         str: Retreived info
     """
-    return "Lumina Bistro is a restaurant located at Jhamsikhel, Lalitpur."
+    response = f"Your request: '{user_request}' has been forwarded to admin and they will contact you soon."
+    return response
