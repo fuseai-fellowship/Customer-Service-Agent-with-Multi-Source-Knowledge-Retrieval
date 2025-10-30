@@ -23,7 +23,7 @@ def code_runner(user_input:str, chat_history:str):
     # add current user message
     human_msg = HumanMessage(content=user_input)
     state["messages"].append(human_msg)
-    state["summary"] += f"\nHuman: {user_input}"
+    # state["summary"] += f"\nHuman: {user_input}"
 
     # invoke graph
     result = graph.invoke(state)
@@ -32,5 +32,6 @@ def code_runner(user_input:str, chat_history:str):
     review = result.get("review_decision")
     final_answer = review.answer if review else "(no answer)"
 
-    chat_summary = f"\nHuman: {user_input}\nAI: {final_answer}"
+    # chat_summary = f"\nHuman: {user_input}\nAI: {final_answer}"
+    chat_summary = result.get("summary", chat_history)
     return final_answer, chat_summary

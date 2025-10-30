@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query # Added Query
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models import KnowledgeBase
@@ -7,9 +7,10 @@ from app.schemas.knowledge import (
 )
 from app.core.embedding import get_embedding_model
 from typing import List
+from pgvector.sqlalchemy import Vector 
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
-model = get_embedding_model() # Load the model once on startup
+model = get_embedding_model() 
 
 @router.post("", response_model=KnowledgeBaseOut, status_code=201)
 def create_knowledge_item(
@@ -20,10 +21,8 @@ def create_knowledge_item(
     Create a new knowledge base item.
     The embedding will be generated automatically.
     """
-    # Create the new KB object
     obj = KnowledgeBase(**payload.dict())
     
-    # Generate and assign the embedding
     embedding_vector = model.encode(obj.content).tolist()
     obj.emb = embedding_vector
     
@@ -61,7 +60,6 @@ def update_knowledge_item(
             content_changed = True
         setattr(obj, key, value)
     
-    # Regenerate embedding ONLY if content changed
     if content_changed:
         print("Content changed, regenerating embedding...")
         embedding_vector = model.encode(obj.content).tolist()
@@ -82,3 +80,24 @@ def delete_knowledge_item(kb_id: int, db: Session = Depends(get_db)):
     
     db.delete(obj)
     db.commit()
+
+
+@router.get("/semantic-search", response_model=List[KnowledgeBaseOut])
+def semantic_search_knowledge(
+    search: str = Query(..., description="A natural language query."),
+    limit: int = Query(3, description="Number of results to return."),
+    db: Session = Depends(get_db)
+):
+    """
+    Performs semantic (vector) search on the knowledge base.
+    """
+    query_embedding = model.encode(search).tolist() 
+
+    kb_items = (
+        db.query(KnowledgeBase)
+        .order_by(KnowledgeBase.emb.l2_distance(query_embedding))
+        .limit(limit)
+        .all()
+    )
+    
+    return kb_items

@@ -13,6 +13,37 @@ app = FastAPI(title="Messenger AI Chatbot")
 
 user_histories: Dict[str, str] = {}
 
+def get_user_profile(sender_id: str) -> str:
+    """
+    Calls the Facebook Graph API to get the user's first and last name.
+    """
+    if not FB_PAGE_ACCESS_TOKEN:
+        print("WARNING: FB_PAGE_ACCESS_TOKEN is not set. Cannot fetch user name.")
+        return f"User {sender_id}" 
+
+    url = f"https://graph.facebook.com/{sender_id}"
+    params = {
+        "fields": "first_name,last_name",
+        "access_token": FB_PAGE_ACCESS_TOKEN
+    }
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        first_name = data.get("first_name", "")
+        last_name = data.get("last_name", "")
+        
+        if first_name and last_name:
+            return f"{first_name} {last_name}"
+        elif first_name:
+            return first_name
+        else:
+            return f"User {sender_id}"
+            
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error fetching user profile for {sender_id}: {e}")
+        return f"User {sender_id}"
+
 def send_to_meta_api(recipient_id: str, text: str):
     if not FB_PAGE_ACCESS_TOKEN:
         print("ERROR: Missing FB_PAGE_ACCESS_TOKEN")
@@ -62,12 +93,21 @@ async def handle_messages(request: Request):
     except (KeyError, IndexError):
         return {"status": "ok", "detail": "Non-message event ignored"}
 
-    print(f"⬅️ Message from {sender_id}: {message_text}")
+    user_name = get_user_profile(sender_id)
+    print(f"⬅️ Message from {user_name} (ID: {sender_id}): {message_text}")
 
     chat_summary = user_histories.get(sender_id, "")
 
+    current_context_summary = (
+        # f"USER_ID: {sender_id}\n"
+        f"USER_NAME: {user_name}\n"
+        f"{chat_summary}\n" 
+        f"Human: {message_text}" 
+    )
+    
+
     try:
-        ai_reply, new_chat_summary = code_runner(message_text, chat_summary)
+        ai_reply, new_chat_summary = code_runner(message_text, current_context_summary)
 
     except Exception as e:
         ai_reply = "Sorry, I'm having trouble. Please try again."

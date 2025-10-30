@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # Import the new routers
-from app.routers import auth, restaurants, categories, items, variations, menu, knowledge
+from app.routers import auth, restaurants, categories, items, variations, menu, knowledge, notifications
 
 app = FastAPI(title="AIF MVP API")
 
@@ -19,3 +19,4 @@ app.include_router(items.router)
 app.include_router(variations.router)
 app.include_router(menu.router) 
 app.include_router(knowledge.router)
+app.include_router(notifications.router)
