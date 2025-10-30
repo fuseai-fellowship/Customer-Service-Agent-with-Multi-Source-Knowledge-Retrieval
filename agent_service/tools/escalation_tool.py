@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 import os
 import requests
-from state import State
+from agent_service.state import State
 
 @tool
 def escalation_tool(state: State, user_request: str) -> dict:
@@ -18,8 +18,8 @@ def escalation_tool(state: State, user_request: str) -> dict:
     """
     user_name = state["user_name"]
     base_url = os.getenv("BASE_URL")
-    # notify_url = f"{base_url}/notify"
-    notify_url = "https://15db7069f2dc.ngrok-free.app/notify"
+    notify_url = f"{base_url}/notify"
+    # notify_url = "base_url/notify"
     # user_name = "Inu gay boy"
     
 
@@ -32,11 +32,21 @@ def escalation_tool(state: State, user_request: str) -> dict:
         ),
     }
 
+    # try:
+    #     response = requests.post(notify_url, json=json_data, timeout=10)
+    #     response.raise_for_status()
+    #     # return "Your request has been forwarded to the admin. They’ll contact you soon."
+    #     return response
+    # except requests.exceptions.RequestException as e:
+    #     print(f"Error calling backend: {e}")
+    #     return f"Error: {e}"
+
     try:
         response = requests.post(notify_url, json=json_data, timeout=10)
         response.raise_for_status()
-        # return "Your request has been forwarded to the admin. They’ll contact you soon."
-        return response
+        # Return a simple dict, which is valid JSON
+        return {"status": "success", "message": "Admin has been notified."}
     except requests.exceptions.RequestException as e:
         print(f"Error calling backend: {e}")
-        return f"Error: {e}"
+        # Return a dict here too
+        return {"status": "error", "message": str(e)}

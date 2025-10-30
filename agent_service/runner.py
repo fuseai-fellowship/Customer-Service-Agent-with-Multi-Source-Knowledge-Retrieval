@@ -24,7 +24,7 @@ def code_runner(user_name:str, user_input:str, chat_history:str):
     # add current user message
     human_msg = HumanMessage(content=user_input)
     state["messages"].append(human_msg)
-    # state["summary"] += f"\nHuman: {user_input}"
+    state["summary"] += f"\nHuman: {user_input}"
 
     # invoke graph
     result = graph.invoke(state)
