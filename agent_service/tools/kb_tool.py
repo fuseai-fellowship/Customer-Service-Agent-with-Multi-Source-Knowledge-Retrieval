@@ -13,7 +13,7 @@ def kb_tool(query:str) -> str:
         str: Retreived info
     """
     base_url = os.getenv("BASE_URL")
-    kb_url = kb_url + "/knowledge/semantic-search"
+    kb_url = base_url + "/knowledge/semantic-search"
     params = {
         "query": query,
         "threshold": 0.7
