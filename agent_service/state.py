@@ -14,3 +14,4 @@ class State(TypedDict):
     review_decision: Optional[ReviewDecision]
     summary: Optional[str]
     tool_output: Optional[str]
+    user_name: str

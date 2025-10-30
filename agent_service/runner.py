@@ -11,13 +11,14 @@ class ReviewDecision(BaseModel):
     answer: str = ""
     todo: str = ""
 
-def code_runner(user_input:str, chat_history:str):
+def code_runner(user_name:str, user_input:str, chat_history:str):
         # fresh state for this run
     state = {
         "messages": [],
         "summary": chat_history,  # inject prior conversation
         "tool_output": "",
-        "review_decision": ReviewDecision(decision="needs_more")  # initial placeholder
+        "review_decision": ReviewDecision(decision="needs_more"),  # initial placeholder
+        "user_name": user_name
     }
 
     # add current user message
