@@ -28,7 +28,8 @@ def interactive_loop():
         # fresh state for this run
         state = {
             "messages": [],
-            "summary": chat_history,  # inject prior conversation
+            "summary": f"Chat History:{chat_history}\n"
+,  # inject prior conversation
             "tool_output": "",
             "review_decision": ReviewDecision(decision="needs_more")  # initial placeholder
         }
@@ -36,7 +37,7 @@ def interactive_loop():
         # add current user message
         human_msg = HumanMessage(content=user_input)
         state["messages"].append(human_msg)
-        state["summary"] += f"\nHuman: {user_input}"
+        state["summary"] += f"\nCurrent User Query: {user_input}"
 
         # invoke graph
         result = graph.invoke(state)
