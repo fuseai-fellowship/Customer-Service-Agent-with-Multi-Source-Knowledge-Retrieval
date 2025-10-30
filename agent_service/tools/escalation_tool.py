@@ -33,7 +33,8 @@ def escalation_tool(user_request: str) -> dict:
     try:
         response = requests.post(notify_url, json=json_data, timeout=10)
         response.raise_for_status()
-        return "Your request has been forwarded to the admin. They’ll contact you soon."
+        # return "Your request has been forwarded to the admin. They’ll contact you soon."
+        return response
     except requests.exceptions.RequestException as e:
         print(f"Error calling backend: {e}")
         return f"Error: {e}"
