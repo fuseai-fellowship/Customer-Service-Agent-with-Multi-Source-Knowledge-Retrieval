@@ -26,7 +26,8 @@ def tool_summarizer_node(state:State):
             continue
 
         if name == "menu_tool":
-            summary_text, overflow = compact_menu_summary(content)
+            # summary_text, overflow = compact_menu_summary(content)
+            summary_text = content
             state["tool_output"] += f"\nmenu_tool output: {summary_text}"
         else:
             state["tool_output"] += f"\n{name} output:\n{content}"
