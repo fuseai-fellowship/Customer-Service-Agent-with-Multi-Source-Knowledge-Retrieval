@@ -26,8 +26,8 @@ def orchestrator(state: State):
     resp = llm_with_tools.invoke(messages)
 
     # append AIMessage content to summary
-    # if isinstance(resp, AIMessage) and getattr(resp, "content", ""):
-    #     state["summary"] += f"\nAI: {resp.content}"
+    if isinstance(resp, AIMessage) and getattr(resp, "content", ""):
+        state["summary"] += f"\nTool agent output: {resp.content}"
 
     # append response to messages
     state["messages"].append(resp)

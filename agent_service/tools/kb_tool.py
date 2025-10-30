@@ -1,4 +1,6 @@
 from langchain_core.tools import tool
+import os, requests
+
 @tool
 def kb_tool(query:str) -> str:
     """
@@ -10,4 +12,17 @@ def kb_tool(query:str) -> str:
     Returns:
         str: Retreived info
     """
-    return "Lumina Bistro is a restaurant located at Jhamsikhel, Lalitpur."
+    base_url = os.getenv("BASE_URL")
+    kb_url = kb_url + "/knowledge/semantic-search"
+    params = {
+        "query": query,
+        "threshold": 0.7
+    }
+
+    try:
+        response = requests.get(base_url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling backend: {e}")
+        return {"error": str(e)}

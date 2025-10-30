@@ -22,6 +22,7 @@ def menu_tool(
         dict: Dictionary containing matching menu items
     """
     base_url = os.getenv("BASE_URL")
+    items_url = base_url + "/items"
     params = {
         "search": search,
         "type": type,
@@ -30,7 +31,7 @@ def menu_tool(
     }
 
     try:
-        response = requests.get(base_url, params=params, timeout=10)
+        response = requests.get(items_url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
