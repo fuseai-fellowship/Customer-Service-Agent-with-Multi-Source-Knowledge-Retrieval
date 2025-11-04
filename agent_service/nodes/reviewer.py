@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from agent_service.state import State
 from agent_service.llm import llm
 from agent_service.prompts import REVIEWER_PROMPT
-from langchain.schema import AIMessage
+from langchain.schema import AIMessage, HumanMessage
 
 class ReviewDecision(BaseModel):
     """Structured output for the reviewer node."""
@@ -22,7 +22,7 @@ def reviewer_node(state: State):
 
     # include summary as a system message (compressed menu_tool output)
     if "summary" in state and state["summary"]:
-        msgs.append(SystemMessage(content=f"Summary: {state['summary']}"))
+        msgs.append(HumanMessage(content=f"Summary: {state['summary']}"))
     
     if "tool_output" in state and state["tool_output"]:
         msgs.append(SystemMessage(content=f"Tool Output: {state['tool_output']}"))

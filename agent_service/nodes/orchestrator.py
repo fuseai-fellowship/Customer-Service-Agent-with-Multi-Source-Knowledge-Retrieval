@@ -1,7 +1,7 @@
 from agent_service.prompts import ORCHESTRATOR_PROMPT
 from agent_service.state import State
 from agent_service.llm import llm
-from langchain.schema import SystemMessage, AIMessage
+from langchain.schema import SystemMessage, AIMessage, HumanMessage
 from agent_service.tools import menu_tool, kb_tool, escalation_tool
 tools = [menu_tool, kb_tool, escalation_tool]
 
@@ -15,7 +15,7 @@ def orchestrator(state: State):
     messages = [SystemMessage(content=ORCHESTRATOR_PROMPT)]
 
     if state.get("summary"):
-        messages.append(SystemMessage(content=f"Summary:\n{state['summary']}"))
+        messages.append(HumanMessage(content=f"Summary:\n{state['summary']}"))
 
     if state.get("review_decision"):
         review_dict = state["review_decision"].model_dump() if hasattr(state["review_decision"], "model_dump") else state["review_decision"]
