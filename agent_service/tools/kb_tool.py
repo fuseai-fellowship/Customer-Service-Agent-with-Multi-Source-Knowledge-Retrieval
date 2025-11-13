@@ -20,7 +20,7 @@ def kb_tool(query:str) -> str:
     }
 
     try:
-        response = requests.get(base_url, params=params, timeout=10)
+        response = requests.get(kb_url, params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
