@@ -4,7 +4,7 @@ import requests
 from agent_service.state import State
 
 @tool
-def escalation_tool(state: State, user_request: str) -> dict:
+def escalation_tool(user_request: str) -> dict:
     """
     Triggers a notification to the admin and informs the user that
     the message has been forwarded to the admin.
@@ -16,7 +16,7 @@ def escalation_tool(state: State, user_request: str) -> dict:
     Returns:
         str: Confirmation or error message.
     """
-    user_name = state["user_name"]
+    # user_name = state["user_name"]
     base_url = os.getenv("BASE_URL")
     notify_url = f"{base_url}/notify"
     # notify_url = "base_url/notify"

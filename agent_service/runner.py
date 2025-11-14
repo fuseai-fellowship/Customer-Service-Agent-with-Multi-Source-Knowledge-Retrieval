@@ -15,7 +15,7 @@ def code_runner(user_name:str, user_input:str, chat_history:str):
         # fresh state for this run
     state = {
         "messages": [],
-        "summary": chat_history,  # inject prior conversation
+        "summary": f"Chat History:{chat_history}\n",  # inject prior conversation
         "tool_output": "",
         "review_decision": ReviewDecision(decision="needs_more"),  # initial placeholder
         "user_name": user_name
@@ -33,6 +33,6 @@ def code_runner(user_name:str, user_input:str, chat_history:str):
     review = result.get("review_decision")
     final_answer = review.answer if review else "(no answer)"
 
-    # chat_summary = f"\nHuman: {user_input}\nAI: {final_answer}"
-    chat_summary = result.get("summary", chat_history)
+    chat_summary = f"\nHuman: {user_input}\nAI: {final_answer}"
+    # chat_summary = result.get("summary", chat_history)
     return final_answer, chat_summary
