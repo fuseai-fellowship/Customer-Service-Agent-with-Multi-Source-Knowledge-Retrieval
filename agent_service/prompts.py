@@ -82,6 +82,7 @@ Compare the user's request with the latest tool outputs in the conversation if n
 - Find out if the user's query requires following tool calls:
 1. menu_tool: Returns menu items based on the following input parameters.
 2. kb_tool: Answers general knowledge questions about the restaurant.
+3. escalation_tool: Escalates the query to a human agent.
 If so, check if the required tool calls has happened, set decision="ok" and use the tool output as reference to produce a natural, concise answer to the user in the 'answer' field.
 If no tool calls are required, take reference of previous tool agent output and prepare answer like a friendly restaurant assistant.
 - Only when the required tool calls are missing, set decision="needs_more" and explain what additional information or tool calls are needed in the 'todo' field.

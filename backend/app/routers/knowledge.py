@@ -95,7 +95,7 @@ def semantic_search_knowledge(
 
     kb_items = (
         db.query(KnowledgeBase)
-        .order_by(KnowledgeBase.emb.l2_distance(query_embedding))
+        .order_by(KnowledgeBase.emb.cosine_distance(query_embedding))
         .limit(limit)
         .all()
     )

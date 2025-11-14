@@ -20,7 +20,7 @@ def reviewer_node(state: State):
     from langchain.schema import SystemMessage
     msgs = [SystemMessage(content=REVIEWER_PROMPT)]
 
-    # include summary as a system message (compressed menu_tool output)
+    # include summary as a system message
     if "summary" in state and state["summary"]:
         msgs.append(HumanMessage(content=f"Summary: {state['summary']}"))
     
@@ -32,19 +32,15 @@ def reviewer_node(state: State):
     
     updates = {}
 
-    # Ensure summary exists
     state.setdefault("summary", "")
 
-    # Append AI answer to summary if decision is "ok"
-    # if review.decision == "ok" and review.answer:
-    #     state["summary"] += f"\nAI: {review.answer}"
-    state["summary"] += f"\nReviewDecision:\n- Decision: {review.decision}\n- Rationale: {review.rationale}\n- Answer: {review.answer}\n- Todo: {review.todo}"
-
+    if review.decision == "ok" and review.answer:
+        state["summary"] += f"\nAI: {review.answer}"
+    
 
     # Store the full ReviewDecision object in state
     state["review_decision"] = review
 
-    # Keep messages as before
     updates["messages"] = [AIMessage(content=review.answer)] if review.decision == "ok" else [SystemMessage(content=f"Reviewer: needs more info → {review.todo}")]
 
-    return state
+    return updates
