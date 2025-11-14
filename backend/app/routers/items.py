@@ -69,63 +69,82 @@ def list_items(
 ):
     """
     Get menu items with filtering and selectable search modes (FTS, fuzzy, or combined).
+    If FTS/fuzzy search yields no results, it falls back to semantic search.
     """
     
-    # --- Step 1: Build the filtering/sorting query to get IDs ---
-    query = db.query(Item.id)
-    # ... (filters for type, price) ...
+    # --- Step 1: Build the base query with filters (price, type) ---
+    base_query = db.query(Item.id)
     if type:
-        query = query.filter(func.lower(Item.subcategory) == type.lower())
+        base_query = base_query.filter(func.lower(Item.subcategory) == type.lower())
     if price_min is not None or price_max is not None:
-        query = query.join(Item.variations)
+        base_query = base_query.join(Item.variations)
         if price_min is not None:
-            query = query.filter(PriceVariation.final_price >= price_min)
+            base_query = base_query.filter(PriceVariation.final_price >= price_min)
         if price_max is not None:
-            query = query.filter(PriceVariation.final_price <= price_max)
+            base_query = base_query.filter(PriceVariation.final_price <= price_max)
+
+    
+    ordered_id_tuples = []
 
     if search:
         search_term = search.strip()
         
-        # --- Define scores for FTS and Fuzzy ---
+        # --- Step 2: Try FTS/Fuzzy search first ---
         ts_query = func.plainto_tsquery('simple', search_term)
-        fts_match = Item.tsv.op('@@')(ts_query) # FTS now includes category via tsv
+        fts_match = Item.tsv.op('@@')(ts_query)
         fts_rank = func.ts_rank(Item.tsv, ts_query)
         
-        # --- UPDATE FUZZY SEARCH ---
         fuzzy_name_match = func.similarity(Item.name_norm, search_term) > similarity_threshold
-        fuzzy_category_match = func.similarity(Item.category_name_norm, search_term) > similarity_threshold # New check
-        fuzzy_match = or_(fuzzy_name_match, fuzzy_category_match) # Combine fuzzy checks
+        fuzzy_category_match = func.similarity(Item.category_name_norm, search_term) > similarity_threshold
+        fuzzy_match = or_(fuzzy_name_match, fuzzy_category_match)
 
-        # Calculate scores for sorting (using MAX of similarities)
         sim_name_score = func.similarity(Item.name_norm, search_term)
-        sim_category_score = func.similarity(Item.category_name_norm, search_term) # New score
-        sim_score = func.greatest(sim_name_score, sim_category_score) # Take the best match
+        sim_category_score = func.similarity(Item.category_name_norm, search_term)
+        sim_score = func.greatest(sim_name_score, sim_category_score)
 
-        # --- Apply the filter (already includes category now) ---
-        query = query.filter(or_(fts_match, fuzzy_match))
+        # Apply FTS/fuzzy filter to the base query
+        search_query = base_query.filter(or_(fts_match, fuzzy_match))
 
-        # --- Apply sorting (scores now include category) ---
+        # Apply sorting
         if search_mode == SearchMode.COMBINED:
             hybrid_score = (fts_rank * 1.0) + (sim_score * 0.5) 
-            query = query.add_columns(hybrid_score).order_by(hybrid_score.desc())
+            search_query = search_query.add_columns(hybrid_score).order_by(hybrid_score.desc())
         elif search_mode == SearchMode.FTS_ONLY:
-            # FTS already includes category via tsv
-            query = query.add_columns(fts_rank).order_by(fts_rank.desc())
+            search_query = search_query.add_columns(fts_rank).order_by(fts_rank.desc())
         elif search_mode == SearchMode.FUZZY_ONLY:
-            # sim_score now includes category
-            query = query.add_columns(sim_score).order_by(sim_score.desc())
+            search_query = search_query.add_columns(sim_score).order_by(sim_score.desc())
+        
+        ordered_id_tuples = search_query.distinct().all()
+
+        # --- Step 3: THIS IS THE NEW FALLBACK LOGIC ---
+        if not ordered_id_tuples:
+            print(f"--- FTS/Fuzzy search for '{search}' empty, falling back to semantic search ---")
             
+            model = get_embedding_model() 
+            query_embedding = model.encode(search).tolist() 
+
+            distance_col = Item.emb.cosine_distance(query_embedding)
+            fallback_query = (
+                base_query  
+                .add_columns(distance_col)
+                .order_by(distance_col.asc()) 
+                .distinct()
+                .limit(5) 
+            )
+            
+            ordered_id_tuples = fallback_query.all()
+
     else:
-        # No change needed here
-        query = query.add_columns(Item.name).order_by(Item.name.asc())
+        # --- Step 4: No search term, just apply default sorting ---
+        default_sort_query = base_query.add_columns(Item.name).order_by(Item.name.asc())
+        ordered_id_tuples = default_sort_query.distinct().all()
 
-    # ... (Step 2: Get ordered_ids) ...
-    # ... (Step 3: Get items_with_relations) ...
-    # ... (Step 4: Manually convert using convert_item_to_item_out) ...
 
-    query = query.distinct()
-    ordered_id_tuples = query.all()
-    if not ordered_id_tuples: return []
+    # --- Step 5: Process results (this part is the same as before) ---
+    if not ordered_id_tuples: 
+        return []
+    
+    # This works for IDs from FTS/Fuzzy OR semantic fallback
     ordered_ids = [id_tuple[0] for id_tuple in ordered_id_tuples]
     
     items_with_relations = db.query(Item).options(
@@ -154,7 +173,7 @@ def semantic_search_items(
     items = db.query(Item).options(
         joinedload(Item.variations),
         joinedload(Item.category) 
-    ).order_by(Item.emb.l2_distance(query_embedding)).limit(limit).all()
+    ).order_by(Item.emb.cosine_distance (query_embedding)).limit(limit).all()
     
     # --- MANUALLY CONVERT TO ItemOut ---
     results = [convert_item_to_item_out(item) for item in items]
