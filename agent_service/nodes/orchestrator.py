@@ -23,12 +23,3 @@ def orchestrator_node(state: State):
 
     return state
 
-test_state = {
-    "query": "wht kind of pizza you got maybe with chicken also are you open at 5pm",
-    "chat_history": [
-        {"user": "Hi", "bot": "Hello! How can I help you today?"},
-        {"user": "I want to know your menu.", "bot": "Sure, what type of dishes are you interested in?"}
-    ]
-}
-resp = orchestrator_node(test_state)
-print(resp['query_types'])

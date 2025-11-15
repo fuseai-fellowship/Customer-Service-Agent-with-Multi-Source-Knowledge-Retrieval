@@ -1,13 +1,13 @@
 # nodes/__init__.py
 
-from .orchestrator import orchestrator 
+from .orchestrator import orchestrator_node
 from .info_agent import info_agent
 from .menu_agent import menu_agent
-from .reviewer import reviewer_node
+from .synthesizer import synthesizer_node
 
 __all__ = [
-    "orchestrator",
+    "orchestrator_node",
     "info_agent",
     "menu_agent",
-    "reviewer_node",
+    "synthesizer_node",
 ]
