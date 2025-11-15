@@ -1,7 +1,7 @@
 # backend/app/routers/items.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_ # <--- IMPORT and_ HERE
 from app.db.session import get_db
 from app.db.models import Item, Category, PriceVariation
 # --- IMPORTANT: We need PriceVariationOut to build the response ---
@@ -69,7 +69,8 @@ def list_items(
 ):
     """
     Get menu items with filtering and selectable search modes (FTS, fuzzy, or combined).
-    If FTS/fuzzy search yields no results, it falls back to semantic search.
+    'Combined' mode uses high-precision Per-Word Fuzzy AND logic.
+    Falls back to semantic search if no results.
     """
     
     # --- Step 1: Build the base query with filters (price, type) ---
@@ -89,36 +90,72 @@ def list_items(
     if search:
         search_term = search.strip()
         
-        # --- Step 2: Try FTS/Fuzzy search first ---
+        # --- Step 2: Define all match conditions and scores ---
+
+        # --- FTS definitions (for FTS_ONLY mode) ---
         ts_query = func.plainto_tsquery('simple', search_term)
         fts_match = Item.tsv.op('@@')(ts_query)
         fts_rank = func.ts_rank(Item.tsv, ts_query)
         
-        fuzzy_name_match = func.similarity(Item.name_norm, search_term) > similarity_threshold
-        fuzzy_category_match = func.similarity(Item.category_name_norm, search_term) > similarity_threshold
-        fuzzy_match = or_(fuzzy_name_match, fuzzy_category_match)
+        # --- Simple Fuzzy definitions (for FUZZY_ONLY mode) ---
+        simple_fuzzy_name_match = func.similarity(Item.name_norm, search_term) > similarity_threshold
+        simple_fuzzy_category_match = func.similarity(Item.category_name_norm, search_term) > similarity_threshold
+        simple_fuzzy_match = or_(simple_fuzzy_name_match, simple_fuzzy_category_match)
+        simple_sim_score = func.greatest(func.similarity(Item.name_norm, search_term), func.similarity(Item.category_name_norm, search_term))
 
-        sim_name_score = func.similarity(Item.name_norm, search_term)
-        sim_category_score = func.similarity(Item.category_name_norm, search_term)
-        sim_score = func.greatest(sim_name_score, sim_category_score)
+        # --- Step 3: SEARCH LOGIC BASED ON MODE ---
 
-        # Apply FTS/fuzzy filter to the base query
-        search_query = base_query.filter(or_(fts_match, fuzzy_match))
+        # Mode 1: FTS_ONLY
+        if search_mode == SearchMode.FTS_ONLY:
+            print(f"--- Using FTS_ONLY search for '{search}' ---")
+            search_query = base_query.filter(fts_match).add_columns(fts_rank).order_by(fts_rank.desc())
+            ordered_id_tuples = search_query.distinct().all()
 
-        # Apply sorting
-        if search_mode == SearchMode.COMBINED:
-            hybrid_score = (fts_rank * 1.0) + (sim_score * 0.5) 
-            search_query = search_query.add_columns(hybrid_score).order_by(hybrid_score.desc())
-        elif search_mode == SearchMode.FTS_ONLY:
-            search_query = search_query.add_columns(fts_rank).order_by(fts_rank.desc())
+        # Mode 2: FUZZY_ONLY (uses simple, broad fuzzy)
         elif search_mode == SearchMode.FUZZY_ONLY:
-            search_query = search_query.add_columns(sim_score).order_by(sim_score.desc())
-        
-        ordered_id_tuples = search_query.distinct().all()
+            print(f"--- Using FUZZY_ONLY search for '{search}' ---")
+            search_query = base_query.filter(simple_fuzzy_match).add_columns(simple_sim_score).order_by(simple_sim_score.desc())
+            ordered_id_tuples = search_query.distinct().all()
 
-        # --- Step 3: THIS IS THE NEW FALLBACK LOGIC ---
+        # Mode 3: COMBINED (Uses NEW Per-Word AND Fuzzy logic)
+        elif search_mode == SearchMode.COMBINED:
+            search_words = [word for word in search_term.split() if word]
+            num_words = len(search_words)
+            
+            per_word_fuzzy_match = False
+            per_word_sim_score = 0.0
+
+            if num_words > 0:
+                # --- Create the AND filter ---
+                # All search words must be similar to the name
+                name_conditions = [func.similarity(Item.name_norm, word) > similarity_threshold for word in search_words]
+                # All search words must be similar to the category
+                category_conditions = [func.similarity(Item.category_name_norm, word) > similarity_threshold for word in search_words]
+                
+                # An item matches if (ALL name words match) OR (ALL category words match)
+                per_word_fuzzy_match = or_(
+                    and_(*name_conditions),  # <--- FIXED
+                    and_(*category_conditions) # <--- FIXED
+                )
+                
+                # --- Create the Ranking Score (Average of similarities) ---
+                if num_words > 1:
+                    # This generates (sim(word1) + sim(word2) + ...) / num_words
+                    avg_name_sim = sum((func.similarity(Item.name_norm, word) for word in search_words), 0.0) / num_words
+                    avg_cat_sim = sum((func.similarity(Item.category_name_norm, word) for word in search_words), 0.0) / num_words
+                    per_word_sim_score = func.greatest(avg_name_sim, avg_cat_sim)
+                else:
+                    # Fallback to simple score for single word
+                    per_word_sim_score = simple_sim_score
+            
+            print(f"--- Using Per-Word AND Fuzzy search for '{search}' ---")
+            search_query = base_query.filter(per_word_fuzzy_match).add_columns(per_word_sim_score).order_by(per_word_sim_score.desc())
+            ordered_id_tuples = search_query.distinct().all()
+
+
+        # --- Step 4: SEMANTIC FALLBACK (runs if previous search failed) ---
         if not ordered_id_tuples:
-            print(f"--- FTS/Fuzzy search for '{search}' empty, falling back to semantic search ---")
+            print(f"--- Search for '{search}' empty, falling back to semantic search ---")
             
             model = get_embedding_model() 
             query_embedding = model.encode(search).tolist() 
@@ -131,20 +168,18 @@ def list_items(
                 .distinct()
                 .limit(5) 
             )
-            
             ordered_id_tuples = fallback_query.all()
 
     else:
-        # --- Step 4: No search term, just apply default sorting ---
+        # --- Step 5: No search term, just apply default sorting ---
         default_sort_query = base_query.add_columns(Item.name).order_by(Item.name.asc())
         ordered_id_tuples = default_sort_query.distinct().all()
 
 
-    # --- Step 5: Process results (this part is the same as before) ---
+    # --- Step 6: Process results (this part is the same as before) ---
     if not ordered_id_tuples: 
         return []
     
-    # This works for IDs from FTS/Fuzzy OR semantic fallback
     ordered_ids = [id_tuple[0] for id_tuple in ordered_id_tuples]
     
     items_with_relations = db.query(Item).options(
