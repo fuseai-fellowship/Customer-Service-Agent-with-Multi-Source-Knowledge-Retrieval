@@ -1,37 +1,34 @@
-from agent_service.prompts import ORCHESTRATOR_PROMPT
-from agent_service.state import State
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from agent_service.llm import llm
-from langchain.schema import SystemMessage, AIMessage, HumanMessage
-from agent_service.tools import menu_tool, kb_tool, escalation_tool
-tools = [menu_tool, kb_tool, escalation_tool]
+from agent_service.state import State, OrchestratorOutput
+from agent_service.prompts import ORCHESTRATOR_PROMPT
 
+orchestrator_llm = llm.with_structured_output(OrchestratorOutput)
 
-def orchestrator(state: State):
-    """
-    Node to classify user intent using the LLM with tools.
-    Updates state['messages'] and state['summary'] in-place.
-    """
-    state.setdefault("summary", "")
-    messages = [SystemMessage(content=ORCHESTRATOR_PROMPT)]
+# Orchestrator Node
+def orchestrator_node(state: State):
+    """Classify user query and extract menu parameters for subagents."""
 
-    if state.get("summary"):
-        messages.append(HumanMessage(content=f"Summary:\n{state['summary']}"))
+    # Construct LLM messages
+    messages = [
+        SystemMessage(content=ORCHESTRATOR_PROMPT),
+        HumanMessage(content=f"Chat history:{state["chat_history"]}"),
+        HumanMessage(content=state["query"])
+    ]
 
-    if state.get("review_decision"):
-        review_dict = state["review_decision"].model_dump() if hasattr(state["review_decision"], "model_dump") else state["review_decision"]
-        messages.append(SystemMessage(content=f"Review Decision:\n{review_dict}"))
+    # Call the LLM (replace `llm` with your LangChain/LLM client)
+    parsed: OrchestratorOutput = orchestrator_llm.invoke(messages)  # Should return JSON string
 
-    # call LLM with tools
-    llm_with_tools = llm.bind_tools(tools)
-    resp = llm_with_tools.invoke(messages)
+    state["query_types"] = parsed.model_dump()["query_types"]
 
-    # append AIMessage content to summary
-    if isinstance(resp, AIMessage) and getattr(resp, "content", ""):
-        state["summary"] += f"\nTool agent output: {resp.content}"
-
-    # append response to messages
-    state["messages"].append(resp)
-
-    # return minimal dict; state is already updated
     return state
 
+test_state = {
+    "query": "wht kind of pizza you got maybe with chicken also are you open at 5pm",
+    "chat_history": [
+        {"user": "Hi", "bot": "Hello! How can I help you today?"},
+        {"user": "I want to know your menu.", "bot": "Sure, what type of dishes are you interested in?"}
+    ]
+}
+resp = orchestrator_node(test_state)
+print(resp['query_types'])
