@@ -101,19 +101,19 @@ async def handle_messages(request: Request):
     user_name = get_user_profile(sender_id)
     print(f"⬅️ Message from {user_name} (ID: {sender_id}): {message_text}")
 
-    chat_summary = user_histories.get(sender_id, "")
+    # chat_summary = user_histories.get(sender_id, "")
 
 
     try:
-        ai_reply, new_chat_summary = code_runner(user_name, message_text, chat_summary)
+        ai_reply = code_runner(user_name, message_text)
 
     except Exception as e:
         ai_reply = "Sorry, I'm having trouble. Please try again."
         print(f"LangGraph Error: {e}")
-        new_chat_summary = chat_summary 
+        # new_chat_summary = chat_summary 
     
     
-    user_histories[sender_id] = new_chat_summary
+    # user_histories[sender_id] = new_chat_summary
 
     send_to_meta_api(sender_id, ai_reply)
     return {"status": "ok"}
