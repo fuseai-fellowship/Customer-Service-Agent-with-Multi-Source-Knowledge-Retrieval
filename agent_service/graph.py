@@ -1,43 +1,33 @@
 from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import tools_condition
-from agent_service.nodes import orchestrator, tools_node, reviewer_node, tool_summarizer_node
+from agent_service.nodes import orchestrator_node, menu_agent, info_agent, synthesizer_node
 from agent_service.state import State
-from agent_service.nodes.reviewer import ReviewDecision
-
-
-def route_after_reviewer(state: State):
-    review: ReviewDecision = state.get("review_decision")
-    if review and review.decision == "needs_more":
-        return "orchestrator_node"
-    return "__end__"
+from agent_service.utils.assign_subagents import assign_subagents
 
 
 def build_graph():
-    g = StateGraph(State)
 
-    g.add_node("orchestrator_node", orchestrator)
-    g.add_node("tools", tools_node)          # or tools_node.invoke
-    g.add_node("reviewer", reviewer_node)
-    g.add_node("summarize_menu_tool",tool_summarizer_node)
+    # Build the workflow
+    workflow_builder = StateGraph(State)
 
-    g.add_edge(START, "orchestrator_node")
+    # Add nodes
+    workflow_builder.add_node("orchestrator", orchestrator_node)
+    workflow_builder.add_node("menu_agent", menu_agent)
+    workflow_builder.add_node("info_agent", info_agent)
+    # workflow_builder.add_node("escalation_agent", escalation_agent)
+    workflow_builder.add_node("synthesizer", synthesizer_node)
 
-    # If assistant asked for tools, go to tools; otherwise go to reviewer
-    g.add_conditional_edges(
-        "orchestrator_node",
-        tools_condition,
-        {"tools": "tools", "__end__": "reviewer"},
-    )
+    # Start edge
+    workflow_builder.add_edge(START, "orchestrator")
 
-    g.add_edge("tools", "summarize_menu_tool")
+    workflow_builder.add_conditional_edges("orchestrator", assign_subagents, ["menu_agent", "info_agent"])
 
-    g.add_edge("summarize_menu_tool", "reviewer")
+    # Collect subagent outputs and send to synthesizer
+    workflow_builder.add_edge("menu_agent", "synthesizer")
+    workflow_builder.add_edge("info_agent", "synthesizer")
+    # workflow_builder.add_edge("escalation_agent", "synthesizer")
 
-    # Reviewer decides whether to loop back or end
-    g.add_conditional_edges(
-        "reviewer",
-        route_after_reviewer,
-        {"orchestrator_node": "orchestrator_node", "__end__": END},
-    )
+    # End edge
+    workflow_builder.add_edge("synthesizer", END)
 
-    return g.compile()
+    return workflow_builder.compile()
+
