@@ -17,7 +17,7 @@ def synthesizer_node(state: Dict) -> Dict:
     subagent_outputs = state.get("subagent_outputs", [])
 
     # Format chat history
-    chat_str = "\n".join([f"User: {c['user']}\nBot: {c['bot']}" for c in chat_history])
+    # chat_str = "\n".join([f"User: {c['user']}\nBot: {c['bot']}" for c in chat_history])
 
     # Format subagent outputs
     subagent_str = ""
@@ -30,7 +30,7 @@ def synthesizer_node(state: Dict) -> Dict:
     # Construct messages using the separate prompt
     messages = [
         SystemMessage(content=SYNTHESIZER_PROMPT),
-        HumanMessage(content=f"Chat history:\n{chat_str}\nUser query: {user_query}\nSubagent outputs:\n{subagent_str}")
+        HumanMessage(content=f"Chat history:\n{chat_history}\nUser query: {user_query}\nSubagent outputs:\n{subagent_str}")
     ]
 
     # Call the LLM

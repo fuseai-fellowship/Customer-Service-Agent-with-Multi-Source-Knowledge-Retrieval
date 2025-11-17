@@ -9,7 +9,7 @@ r = redis.Redis(
     password= REDIS_PASSWORD,
 )
 
-USER_KEY = "chat_history:config"  # You can make this dynamic per user/session
+USER_KEY = "chat_history:runner"  # You can make this dynamic per user/session
 TTL_SECONDS = 30
 
 def save_message(role, content):

@@ -9,11 +9,12 @@ orchestrator_llm = llm.with_structured_output(OrchestratorOutput)
 def orchestrator_node(state: State):
     """Classify user query and extract menu parameters for subagents."""
 
+    user_query = state["query"]
+    chat_history = state.get("chat_history", [])
     # Construct LLM messages
     messages = [
         SystemMessage(content=ORCHESTRATOR_PROMPT),
-        HumanMessage(content=f"Chat history:{state["chat_history"]}"),
-        HumanMessage(content=state["query"])
+        HumanMessage(content=f"Chat history:\n{chat_history}\nUser query: {user_query}")
     ]
 
     # Call the LLM (replace `llm` with your LangChain/LLM client)
