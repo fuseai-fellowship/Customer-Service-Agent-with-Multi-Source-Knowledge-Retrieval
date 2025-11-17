@@ -1,54 +1,45 @@
-import os
-from langchain.chat_models import init_chat_model
-from dotenv import load_dotenv
-load_dotenv()
+from agent_service.llm import llm
+import redis, json
+from agent_service.config import REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, REDIS_USERNAME
+r = redis.Redis(
+    host= REDIS_HOST,
+    port= REDIS_PORT,
+    decode_responses=True,
+    username= REDIS_USERNAME,
+    password= REDIS_PASSWORD,
+)
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+USER_KEY = "chat_history:config"  # You can make this dynamic per user/session
+TTL_SECONDS = 30
 
-llm = init_chat_model("google_genai:gemini-2.0-flash")
+def save_message(role, content):
+    # Append message to Redis list
+    msg = json.dumps({"role": role, "content": content})
+    r.rpush(USER_KEY, msg)
+    # Optionally, trim list to last N messages to save memory
+    r.ltrim(USER_KEY, -20, -1) 
+    r.expire(USER_KEY, TTL_SECONDS)
 
-from typing import Annotated
+def load_history():
+    history = []
+    for msg_json in r.lrange(USER_KEY, 0, -1):
+        history.append(json.loads(msg_json))
+    return history
 
-from typing_extensions import TypedDict
+chat_history = []
 
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
-
-
-class State(TypedDict):
-    messages: Annotated[list, add_messages]
-
-
-graph_builder = StateGraph(State)
-
-def chatbot(state: State):
-    return {"messages": [llm.invoke(state["messages"])]}
-
-
-# The first argument is the unique node name
-# The second argument is the function or object that will be called whenever
-# the node is used.
-graph_builder.add_node("chatbot", chatbot)
-graph_builder.add_edge(START, "chatbot")
-graph_builder.add_edge("chatbot", END)
-graph = graph_builder.compile()
-
-def stream_graph_updates(user_input: str):
-    for event in graph.stream({"messages": [{"role": "user", "content": user_input}]}):
-        for value in event.values():
-            print("Assistant:", value["messages"][-1].content)
-
-
+print("Start chatting with Gemini (type 'exit' to quit)")
 while True:
-    try:
-        user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
-            print("Goodbye!")
-            break
-        stream_graph_updates(user_input)
-    except:
-        # fallback if input() is not available
-        user_input = "What do you know about LangGraph?"
-        print("User: " + user_input)
-        stream_graph_updates(user_input)
+    user_input = input("You: ")
+    if user_input.lower() == "exit":
         break
+    
+    save_message("user", user_input)
+    chat_history = load_history()
+
+    response = llm.invoke(chat_history)
+    assistant_text = response.content  # safer than .last
+
+    print(f"Gemini: {assistant_text}")
+
+    save_message("assistant", assistant_text)
