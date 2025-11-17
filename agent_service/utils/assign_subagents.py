@@ -14,7 +14,7 @@ def assign_subagents(state: State):
         elif qt["type"] == "ambiguous":
             # inject synthetic chitchat output for synthesizer, no Send required
             state.setdefault("subagent_outputs", []).append({
-                "type": "chitchat",
+                "type": "ambiguous",
                 "parameters": {},
                 "output": qt["clarification"]
             })
