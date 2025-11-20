@@ -16,6 +16,9 @@ Menu parameters (for type="menu"):
 Info queries:
 - Extract the concerned topic (e.g. "opening hours", "address", "delivery options") into `parameters` as { "topic": "<string>" }.
 
+Escalation queries:
+- Prepare a concise reason for escalation based on the user interaction and extract it into `parameters` as { "topic": "<string>" }. This should describe why the user needs human assistance or why the bot cannot resolve the query.
+
 Special instructions:
 - A query may have multiple types.
 - Only ambiguous queries have a clarifying question.

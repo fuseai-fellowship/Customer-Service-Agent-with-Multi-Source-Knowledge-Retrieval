@@ -7,18 +7,20 @@ r = redis.Redis(
     username= REDIS_USERNAME,
     password= REDIS_PASSWORD,
 )
-USER_KEY = "chat_history:runner"
 
-def save_message(role, content):
-    # Append message to Redis list
+def get_user_key(user_id: str):
+    return f"chat_history:{user_id}"
+
+def save_message(user_id: str, role: str, content: str):
+    user_key = get_user_key(user_id)  # <- use here
     msg = json.dumps({"role": role, "content": content})
-    r.rpush(USER_KEY, msg)
-    # Optionally, trim list to last N messages to save memory
-    r.ltrim(USER_KEY, -CHAT_MAX_MESSAGES, -1) 
-    r.expire(USER_KEY, CHAT_TTL_SECONDS)
+    r.rpush(user_key, msg)
+    r.ltrim(user_key, -CHAT_MAX_MESSAGES, -1)
+    r.expire(user_key, CHAT_TTL_SECONDS)
 
-def load_history():
+def load_history(user_id: str):
+    user_key = get_user_key(user_id)  # <- and here
     history = []
-    for msg_json in r.lrange(USER_KEY, 0, -1):
+    for msg_json in r.lrange(user_key, 0, -1):
         history.append(json.loads(msg_json))
     return history

@@ -5,8 +5,12 @@ from pydantic import BaseModel
 # Define State
 class State(TypedDict):
     query: str
-    chat_history: List[Dict[str, str]]  # List of {"user": ..., "bot": ...}
-    query_types: Optional[List[Dict]]  # Will be filled by orchestrator
+    chat_history: List[Dict[str, str]] 
+
+    user_id: str
+    user_name: Optional[str]
+
+    query_types: Optional[List[Dict]]  
     subagent_outputs: Annotated[list, add]
     final_response: Optional[str]
 
