@@ -4,10 +4,12 @@ from .orchestrator import orchestrator_node
 from .info_agent import info_agent
 from .menu_agent import menu_agent
 from .synthesizer import synthesizer_node
+from .escalation_agent import escalation_agent
 
 __all__ = [
     "orchestrator_node",
     "info_agent",
     "menu_agent",
     "synthesizer_node",
+    "escalation_agent"
 ]
