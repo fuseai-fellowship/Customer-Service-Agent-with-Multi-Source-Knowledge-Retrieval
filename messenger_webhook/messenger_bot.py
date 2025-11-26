@@ -105,7 +105,7 @@ async def handle_messages(request: Request):
 
 
     try:
-        ai_reply = code_runner(user_name, message_text)
+        ai_reply = code_runner(user_name, message_text,sender_id)
 
     except Exception as e:
         ai_reply = "Sorry, I'm having trouble. Please try again."
