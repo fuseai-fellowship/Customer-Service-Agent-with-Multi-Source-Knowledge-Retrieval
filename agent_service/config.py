@@ -12,4 +12,4 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 # Chat settings
 CHAT_TTL_SECONDS = int(os.getenv("CHAT_TTL_SECONDS", 3600))
-CHAT_MAX_MESSAGES = int(os.getenv("CHAT_MAX_MESSAGES", 20))
+CHAT_MAX_MESSAGES = int(os.getenv("CHAT_MAX_MESSAGES", 10))
