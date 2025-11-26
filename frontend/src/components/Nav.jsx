@@ -1,23 +1,24 @@
-// src/components/Nav.jsx
-export default function Nav({ currentPage, onNavigate }) {
-  const buttonBase = "px-3 py-1.5 rounded-lg text-sm transition-colors";
-  const activeClass = "bg-slate-900 text-white hover:bg-slate-800";
-  const inactiveClass = "bg-white border border-slate-300 hover:bg-slate-100";
+import { NavLink } from "react-router-dom"; // Use NavLink for active styling
+
+export default function Nav() {
+  const buttonBase =
+    "px-3 py-1.5 rounded-lg text-sm transition-colors text-center";
+  // Helper to apply classes based on 'isActive' state
+  const getLinkClass = ({ isActive }) =>
+    `${buttonBase} ${
+      isActive
+        ? "bg-slate-900 text-white hover:bg-slate-800"
+        : "bg-white border border-slate-300 hover:bg-slate-100"
+    }`;
 
   return (
     <nav className="flex items-center gap-2">
-      <button
-        onClick={() => onNavigate("menu")}
-        className={`${buttonBase} ${currentPage === 'menu' ? activeClass : inactiveClass}`}
-      >
-        Menu
-      </button>
-      <button
-        onClick={() => onNavigate("restaurant")}
-        className={`${buttonBase} ${currentPage === 'restaurant' ? activeClass : inactiveClass}`}
-      >
+      <NavLink to="/restaurant" className={getLinkClass}>
         Restaurant
-      </button>
+      </NavLink>
+      <NavLink to="/menu" className={getLinkClass}>
+        Menu
+      </NavLink>
       <button
         onClick={() => {
           localStorage.removeItem("token");

@@ -75,4 +75,21 @@ export async function deleteVariation(id) {
   await api.delete(`/variations/${id}`);
 }
 
+// --- Knowledge Base ---
+export async function getKnowledge() {
+  const { data } = await api.get("/knowledge");
+  return data;
+}
+export async function createKnowledge(payload) {
+  const { data } = await api.post("/knowledge", payload);
+  return data;
+}
+export async function updateKnowledge(id, payload) {
+  const { data } = await api.patch(`/knowledge/${id}`, payload);
+  return data;
+}
+export async function deleteKnowledge(id) {
+  await api.delete(`/knowledge/${id}`);
+}
+
 export default api;
