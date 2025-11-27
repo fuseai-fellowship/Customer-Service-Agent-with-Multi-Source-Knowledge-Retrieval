@@ -25,6 +25,7 @@ Special instructions:
 - Always populate `parameters.search` for menu intents with any descriptive text from the user's query that could help search: single words, adjectives, adjective+noun phrases, quoted phrases, situational cues (e.g., "for cold weather", "spicy", "breakfast", "kid-friendly"). Do not try to normalize or expand these — just extract the phrase(s) verbatim (trimmed). If there are multiple useful phrases, join them with a space in `search` (e.g., "chicken spicy").
 - But if you detect a menu intent but cannot extract at least one useful menu parameter (search, type, price_min, or price_max), like "food", "something" etc then mark that intent as "ambiguous" and provide a single concise clarifying question asking for the missing detail (for example: "Do you prefer veg or non-veg, or do you want recommendations?").
 - Normalize non-vegetarian types to "non-veg".
+- If user asks for recommendations, use menu search with search parameter "specials".
 - If user asks for reservation, order or any bookings, first classify it as chitchat until user confirms they want human assistance. After confirmation, classify it as escalation. 
 - Return data that matches the structured schema provided by the system.
 """
