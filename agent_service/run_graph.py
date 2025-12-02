@@ -3,7 +3,7 @@ from agent_service.utils.redis import save_message, load_history
 
 graph = build_graph()
 
-def interactive_loop(user_id="user03", user_name="camus"):
+def interactive_loop(user_id="user05", user_name="camus"):
     print("Chat loop (type 'exit' to quit)\n")
 
     while True:

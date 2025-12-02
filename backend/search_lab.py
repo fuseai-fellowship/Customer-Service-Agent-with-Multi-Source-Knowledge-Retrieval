@@ -47,8 +47,10 @@ def search_fuzzy_db_weighted(db: Session, query: str):
     return results
 
 
-# results = search_fuzzy_db_weighted(db, "tortilla chips")
-# print(results)
+results = search_fuzzy_db_weighted(db, "piza")
+for item, score in results:
+    print(f" {item.name} → score={round(score,3)}")
+
 
 
 from sqlalchemy import bindparam
@@ -102,6 +104,6 @@ def search_semantic(db: Session, query: str, top_k: int = 15):
         formatted.append((item, sim_weighted, sim_raw_rounded))
 
     return formatted
-results = search_semantic(db, "tortilla", top_k=10)
-for item, weighted_score, raw_score in results:
-    print(item.name, weighted_score, raw_score)
+# results = search_semantic(db, "tortilla", top_k=10)
+# for item, weighted_score, raw_score in results:
+#     print(item.name, weighted_score, raw_score)
