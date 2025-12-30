@@ -6,7 +6,16 @@ import CategoryFormModal from "../components/CategoryFormModal";
 import ItemFormModal from "../components/ItemFormModal";
 import ManageVariationsModal from "../components/ManageVariationsModal";
 import DescriptionViewModal from "../components/DescriptionViewModal";
-import { getCategories, createCategory, updateCategory, deleteCategory, getItems, createItem, updateItem, deleteItem } from "../lib/api";
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getItems,
+  createItem,
+  updateItem,
+  deleteItem,
+} from "../lib/api";
 
 export default function MenuPage() {
   const [tab, setTab] = useState(0);
@@ -20,17 +29,27 @@ export default function MenuPage() {
   const [items, setItems] = useState([]);
   const [isItemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   // This state now controls the variations modal and the auto-create flag
-  const [variationsModalState, setVariationsModalState] = useState({ open: false, item: null, autoCreate: false });
+  const [variationsModalState, setVariationsModalState] = useState({
+    open: false,
+    item: null,
+    autoCreate: false,
+  });
 
   const [isDescriptionModalOpen, setDescriptionModalOpen] = useState(false);
-  const [viewingDescription, setViewingDescription] = useState({ title: "", content: "" });
+  const [viewingDescription, setViewingDescription] = useState({
+    title: "",
+    content: "",
+  });
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [catData, itemData] = await Promise.all([getCategories(), getItems()]);
+      const [catData, itemData] = await Promise.all([
+        getCategories(),
+        getItems(),
+      ]);
       setCategories(catData);
       setItems(itemData);
     } catch (error) {
@@ -50,7 +69,7 @@ export default function MenuPage() {
     else setEditingCategory(data);
     setCategoryModalOpen(true);
   };
-  
+
   const handleItemCrud = (action, data) => {
     if (action === "create") setEditingItem(null);
     else setEditingItem(data);
@@ -58,7 +77,9 @@ export default function MenuPage() {
   };
 
   const handleCategorySubmit = (formData) => {
-    const promise = editingCategory ? updateCategory(editingCategory.id, formData) : createCategory(formData);
+    const promise = editingCategory
+      ? updateCategory(editingCategory.id, formData)
+      : createCategory(formData);
     promise.then(() => {
       setCategoryModalOpen(false);
       loadData();
@@ -77,7 +98,7 @@ export default function MenuPage() {
     }
     loadData();
   };
-  
+
   const handleViewDescription = (title, content) => {
     setViewingDescription({ title: `Description for ${title}`, content });
     setDescriptionModalOpen(true);
@@ -89,7 +110,7 @@ export default function MenuPage() {
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label="Menu Items" />
           <Tab label="Categories" />
-          <Tab label="Specials" disabled />
+          {/* <Tab label="Specials" disabled /> */}
         </Tabs>
       </Box>
 
@@ -98,12 +119,24 @@ export default function MenuPage() {
           rows={items}
           categories={categories}
           onCrud={handleItemCrud}
-          onManageVariations={(item) => setVariationsModalState({ open: true, item: item, autoCreate: false })}
+          onManageVariations={(item) =>
+            setVariationsModalState({
+              open: true,
+              item: item,
+              autoCreate: false,
+            })
+          }
           onViewDescription={handleViewDescription}
           loading={loading}
         />
       )}
-      {tab === 1 && <CategoriesTable rows={categories} onCrud={handleCategoryCrud} loading={loading} />}
+      {tab === 1 && (
+        <CategoriesTable
+          rows={categories}
+          onCrud={handleCategoryCrud}
+          loading={loading}
+        />
+      )}
 
       {/* --- Modals --- */}
       <CategoryFormModal
@@ -124,7 +157,11 @@ export default function MenuPage() {
           item={variationsModalState.item}
           startWithCreate={variationsModalState.autoCreate}
           onClose={() => {
-            setVariationsModalState({ open: false, item: null, autoCreate: false });
+            setVariationsModalState({
+              open: false,
+              item: null,
+              autoCreate: false,
+            });
             loadData();
           }}
         />

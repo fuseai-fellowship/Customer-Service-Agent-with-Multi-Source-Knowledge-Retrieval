@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { login } from "../lib/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("admin@demo.resto");
   const [password, setPassword] = useState("admin");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   async function submit(e) {
     e.preventDefault();
@@ -14,6 +16,7 @@ export default function Login({ onLogin }) {
     try {
       const res = await login(email, password);
       onLogin(res.access_token);
+      navigate("/restaurant"); // Redirect to /restaurant after successful login
     } catch {
       setErr("Invalid credentials");
     } finally {

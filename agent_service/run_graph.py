@@ -1,21 +1,10 @@
 from agent_service.graph import build_graph
-from langchain.schema import HumanMessage
-from pydantic import BaseModel
-from typing import Literal
+from agent_service.utils.redis import save_message, load_history
 
 graph = build_graph()
 
-class ReviewDecision(BaseModel):
-    decision: Literal["ok", "needs_more"]
-    rationale: str = ""
-    answer: str = ""
-    todo: str = ""
-
-def interactive_loop():
+def interactive_loop(user_id="user05", user_name="camus"):
     print("Chat loop (type 'exit' to quit)\n")
-
-    # Persisted compact chat history (human ↔ AI exchanges)
-    chat_history = ""
 
     while True:
         user_input = input("You: ").strip()
@@ -25,36 +14,30 @@ def interactive_loop():
         if not user_input:
             continue
 
-        # fresh state for this run
+        # Load history for this user
+        chat_history = load_history(user_id)
+
+        # Save the user's new message
+        save_message(user_id, "user", user_input)
+        
+        # Fresh state for this run
         state = {
-            "messages": [],
-            "summary": f"Chat History:{chat_history}\n"
-,  # inject prior conversation
-            "tool_output": "",
-            "review_decision": ReviewDecision(decision="needs_more")  # initial placeholder
+            "query": user_input,
+            "chat_history": chat_history,
+            "subagent_outputs": [],
+            "user_id": user_id,
+            "user_name": user_name
         }
-
-        # add current user message
-        human_msg = HumanMessage(content=user_input)
-        state["messages"].append(human_msg)
-        state["summary"] += f"\nCurrent User Query: {user_input}"
-
-        # invoke graph
+     
+        # Invoke the graph
         result = graph.invoke(state)
-
-        # Extract final answer from result's review_decision
-        review = result.get("review_decision")
-        final_answer = review.answer if review else "(no answer)"
+        final_answer = result.get("final_response", "(no response)")
 
         # Print assistant's reply
         print("\nAssistant:", final_answer)
 
-        # Update chat_history with human + AI turn only
-        chat_history += f"\nHuman: {user_input}\nAI: {final_answer}"
-        # Optional: trim history to last N chars/lines
-        MAX_CHARS = 2000
-        if len(chat_history) > MAX_CHARS:
-            chat_history = chat_history[-MAX_CHARS:]
+        # Save the assistant's reply
+        save_message(user_id, "assistant", final_answer)
 
         print()  # blank line for readability
 
